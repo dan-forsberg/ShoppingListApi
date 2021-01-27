@@ -49,7 +49,7 @@ router.use((req, res, next) => {
 });
 
 /** Routes go here */
-router.use('/api/lists', listRoutes);
+router.use('/api', listRoutes);
 
 /** Error handling */
 router.use((req, res, next) => {
