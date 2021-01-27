@@ -1,9 +1,8 @@
 import http from 'http';
-import bodyParser from 'body-parser';
 import express from 'express';
 import logging from './config/logging';
 import config from './config/config';
-import bookRoutes from './routes/book';
+import listRoutes from './routes/shoppingLists';
 import mongoose from 'mongoose';
 
 const NAMESPACE = 'Server';
@@ -33,8 +32,8 @@ router.use((req, res, next) => {
 });
 
 /** Parse the body of the request */
-router.use(bodyParser.urlencoded({ extended: true }));
-router.use(bodyParser.json());
+router.use(express.urlencoded({ extended: true }));
+router.use(express.json());
 
 /** Rules of our API */
 router.use((req, res, next) => {
@@ -50,7 +49,7 @@ router.use((req, res, next) => {
 });
 
 /** Routes go here */
-router.use('/api/books', bookRoutes);
+router.use('/api/lists', listRoutes);
 
 /** Error handling */
 router.use((req, res, next) => {
@@ -63,4 +62,4 @@ router.use((req, res, next) => {
 
 const httpServer = http.createServer(router);
 
-httpServer.listen(config.server.port, () => logging.info(NAMESPACE, `Server is running ${config.server.hostname}:${config.server.port}`));
+httpServer.listen(config.server.port, () => logging.info(NAMESPACE, `Server is running http://${config.server.hostname}:${config.server.port}`));

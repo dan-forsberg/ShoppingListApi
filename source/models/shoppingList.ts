@@ -5,7 +5,7 @@ import IShoppingList from '../interfaces/shoppingList';
 const ShoppingListSchema: Schema = new Schema(
     {
         name: { type: String, required: false },
-        items: { type: Object, required: false },
+        items: { type: Object, required: false }
     },
     {
         timestamps: true
