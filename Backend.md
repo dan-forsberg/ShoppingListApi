@@ -41,14 +41,6 @@ A new shopping list to the server should look something like this
 
 An `items` item can either be a string like `"bread"` or an object `{"item": "milk", "amount": 2, "price": 20}`. Price and amount is optional. If neither is relevant then the item should be sent as a string.
 
-Any errors should be a json-object looking like this
-
-    {"success": false, "message": "Something went wrong."}
-
-A successful operation should(?) return something like this
-
-    {"sucess": true, "id": 12345}
-
 ** GET /
 Should return any uncompleted shopping lists, showing ID, name and creation date.
 
