@@ -4,6 +4,8 @@ import controller from '../controllers/shoppingList';
 const router = express.Router();
 router.post('/create/list', controller.createList);
 router.get('/get/lists', controller.getAllLists);
-router.put('/update/list/:id', controller.addItemsToList);
+router.put('/update/list/additem/:id', controller.addItemsToList);
+router.patch('/update/list/updateitem/:id', controller.updateItem);
+router.delete('/update/list/deleteitem/:id', controller.deleteItemFromList);
 
 export = router;

@@ -1,9 +1,9 @@
-import { NextFunction, Request, Response } from 'express';
+import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import logging from '../config/logging';
 import ShoppingList from '../models/shoppingList';
 
-const createList = (req: Request, res: Response) => {
+const createList = async (req: Request, res: Response) => {
     /* Do some crude validation */
     let errorMsg = '';
     if (Object.keys(req.body).length > 2) errorMsg += 'Body has too many paramaters. ';
@@ -19,7 +19,6 @@ const createList = (req: Request, res: Response) => {
         name,
         items
     });
-
     return list
         .save()
         .then((result) => {
@@ -60,7 +59,12 @@ const deleteItemFromList = async (req: Request, res: Response) => {
 
     try {
         let document = await ShoppingList.findById({ _id: req.params.id });
-        document.items.pop(...req.body.items);
+        let index = document.items.indexOf(req.body.items);
+        if (index == -1)
+            return res.status(400).json({message: "Item not found."});
+
+        document.items.splice(index, 1);
+
         await document.save();
         res.status(200).json(document);
     } catch (ex) {
@@ -68,6 +72,26 @@ const deleteItemFromList = async (req: Request, res: Response) => {
         return res.status(400).json({message: "Could not add item."});
     }
 };
+
+const updateItem = async (req:Request, res: Response) => {
+    let errorMsg = '';
+    if (!req.params.id) errorMsg += 'No ID specified. ';
+    if (!req.body.items || req.body.items.length < 1) errorMsg += 'No items in body. ';
+    if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
+
+    try {
+        let document = await ShoppingList.findById({ _id: req.params.id });
+        let index = document.items.indexOf(req.body.items);
+        if (index == -1)
+            return res.status(400).json({ message: "Item not found." });
+        // är du dum i huvudet?
+        document.items[index] = req.body.items[0];
+        await document.save();
+        res.status(200).json({ document });
+    } catch (ex) {
+
+    }
+}
 
 const addItemsToList = async (req: Request, res: Response) => {
     let errorMsg = '';
@@ -86,4 +110,4 @@ const addItemsToList = async (req: Request, res: Response) => {
     }
 };
 
-export default { createList, getAllLists, addItemsToList };
+export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList };
