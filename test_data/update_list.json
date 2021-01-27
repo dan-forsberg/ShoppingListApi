@@ -1,0 +1,6 @@
+{
+    "items": [
+        "bread",
+        {"item": "eggs", "amount": 12}
+    ]
+}

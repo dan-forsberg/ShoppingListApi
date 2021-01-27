@@ -1,0 +1,10 @@
+{
+    "name": "Test",
+    "items": [
+        "bread",
+        "eggs",
+        {"item": "milk", "amount": 3, "price": 30},
+        {"item": "jam", "amount": 2},
+        {"item": "steak", "price": 100}
+    ]
+}

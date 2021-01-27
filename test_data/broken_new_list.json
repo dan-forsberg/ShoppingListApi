@@ -1,0 +1,11 @@
+{
+    "name": "Borked Test",
+    "item": [
+        "bread",
+        "eggs",
+        {"items": "milk", "amount": 3, "price": 30},
+        {"item": "jam", "amount": 2},
+        {"item": "steak", "price": 100}
+    ],
+    "date": "this is very broken"
+}
