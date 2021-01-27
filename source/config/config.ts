@@ -12,19 +12,19 @@ const MONGO_OPTIONS = {
     retryWrites: false
 };
 
-const MONGO_USERNAME = process.env.MONGO_USERNAME || 'superuser';
-const MONGO_PASSWORD = process.env.MONGO_USERNAME || 'supersecretpassword1';
-const MONGO_HOST = process.env.MONGO_URL || `cluster0.iakjr.mongodb.net/shoppinglist`;
+const MONGO_USERNAME = process.env.MONGO_USERNAME || 'shopper';
+const MONGO_PASSWORD = process.env.MONGO_USERNAME || 'ryLodqmacKHKD6m9';
+const MONGO_HOST = process.env.MONGO_URL || `cluster0.iakjr.mongodb.net`;
 
 const MONGO = {
     host: MONGO_HOST,
     password: MONGO_PASSWORD,
     username: MONGO_USERNAME,
     options: MONGO_OPTIONS,
-    url: `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}`
+    url: `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}/shoppinglist`
 };
 
-const SERVER_HOSTNAME = process.env.SERVER_HOSTNAME || 'localhost';
+const SERVER_HOSTNAME = process.env.SERVER_HOSTNAME || '0.0.0.0';
 const SERVER_PORT = process.env.SERVER_PORT || 8080;
 
 const SERVER = {
