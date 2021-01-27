@@ -29,13 +29,13 @@ const createBook = (req: Request, res: Response, next: NextFunction) => {
 const getAllBooks = (req: Request, res: Response, next: NextFunction) => {
     Book.find()
         .exec()
-        .then((books) => {
+        .then((books: any) => {
             return res.status(200).json({
                 books: books,
                 count: books.length
             });
         })
-        .catch((error) => {
+        .catch((error: any) => {
             return res.status(500).json({
                 message: error.message,
                 error
