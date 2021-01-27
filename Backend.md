@@ -30,13 +30,13 @@ A shopping list sent from the server will look something like this
         }
     }
 
-A shopping list to the server should look something like this
+A new shopping list to the server should look something like this
 
     {
         "name": "Coop"
-        "items": {
+        "items": [
             "bread"
-        }
+        ]
     }
 
 An `items` item can either be a string like `"bread"` or an object `{"item": "milk", "amount": 2, "price": 20}`. Price and amount is optional. If neither is relevant then the item should be sent as a string.
