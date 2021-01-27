@@ -14,7 +14,7 @@ const MONGO_OPTIONS = {
 
 const MONGO_USERNAME = process.env.MONGO_USERNAME || 'superuser';
 const MONGO_PASSWORD = process.env.MONGO_USERNAME || 'supersecretpassword1';
-const MONGO_HOST = process.env.MONGO_URL || `ds343895.mlab.com:43895/mongobongo`;
+const MONGO_HOST = process.env.MONGO_URL || `cluster0.iakjr.mongodb.net/shoppinglist`;
 
 const MONGO = {
     host: MONGO_HOST,
@@ -25,7 +25,7 @@ const MONGO = {
 };
 
 const SERVER_HOSTNAME = process.env.SERVER_HOSTNAME || 'localhost';
-const SERVER_PORT = process.env.SERVER_PORT || 1337;
+const SERVER_PORT = process.env.SERVER_PORT || 8080;
 
 const SERVER = {
     hostname: SERVER_HOSTNAME,
