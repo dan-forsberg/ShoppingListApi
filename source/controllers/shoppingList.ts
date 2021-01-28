@@ -10,6 +10,23 @@ const selection = '_id name createdAt items';
 
 //TODO: Add more proper error handling, return the results more consistently
 
+//TODO: fix this
+const makeStringToItem = (item: any) => {
+    if (typeof item === 'string') {
+        return { item: item, bought: false };
+    } else if (!item.hasOwnProperty('bought')) {
+        item.bought = false;
+    }
+    return item;
+};
+
+const inputToItems = (items: Array<Object>) => {
+    for (let i = 0; items.length < 0; i++) {
+        items[i] = makeStringToItem(items[i]);
+    }
+    return items;
+};
+
 // post('/create/list')
 const createList = (req: Request, res: Response) => {
     /* Do some crude validation */
@@ -21,6 +38,10 @@ const createList = (req: Request, res: Response) => {
     if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
 
     let { name, items } = req.body;
+    items = inputToItems(items);
+
+    console.log(items);
+
     const list = new ShoppingList({
         _id: new mongoose.Types.ObjectId(),
         name,
@@ -31,11 +52,11 @@ const createList = (req: Request, res: Response) => {
         let result = list.save();
         logging.info(workspace, 'Created list.');
         res.status(201).json({
-            list: result
+            list: result /* should fix */
         });
-    } catch (err) {
+    } catch (error) {
         res.status(500).json();
-        logging.error(workspace, `Could not save list ${list}.`, err);
+        logging.error(workspace, `Could not save list ${list}.`, error);
     }
 };
 
@@ -54,9 +75,9 @@ const deleteList = async (req: Request, res: Response) => {
             logging.info(workspace, `List with id ${id} unsucessfully deleted.`, list);
             res.status(400).json({ message: 'List not found.' });
         }
-    } catch (err) {
+    } catch (error) {
         res.status(500);
-        logging.error(workspace, 'Could not delete list.', err);
+        logging.error(workspace, 'Could not delete list.', error);
     }
 };
 
@@ -74,7 +95,7 @@ const getAllLists = async (req: Request, res: Response) => {
             logging.error(workspace, 'Could not get lists.');
             res.status(400);
         }
-    } catch (err) {
+    } catch (error) {
         res.status(500);
     }
 };
@@ -103,16 +124,15 @@ const deleteItemFromList = async (req: Request, res: Response) => {
         } else {
             res.status(400).json({ message: 'List not found.' });
         }
-    } catch (ex: any) {
-        logging.error(workspace, 'Could not add item to list', ex);
+    } catch (error) {
+        logging.error(workspace, 'Could not add item to list', error);
         return res.status(400).json({ message: 'Could not add item.' });
     }
 };
 
 // TODO: support multiple items in one request
-// TODO: Use promises?
 // patch('/update/list/updateitem/:id')
-const updateItem = (req: Request, res: Response) => {
+const updateItem = async (req: Request, res: Response) => {
     console.info(workspace, req.body);
     let errorMsg = '';
     if (req.params.id === undefined) errorMsg += 'No ID specified. ';
@@ -120,24 +140,22 @@ const updateItem = (req: Request, res: Response) => {
     if (req.body.index === undefined) errorMsg += 'No item index specified ';
     if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
 
-    ShoppingList.findById({ _id: req.params.id })
-        .then((document: IShoppingList) => {
-            let index = Number.parseInt(req.body.index);
-            if (!document.items || isNaN(req.body.index) || index > document.items.length) {
-                throw new Error('Item not found.');
-            }
+    try {
+        let document: IShoppingList = await ShoppingList.findById({ _id: req.params.id });
+        let index = req.body.index;
+        if (!document.items || isNaN(index) || index > document.items.length) {
+            res.status(400).json({ message: 'Item not found.' });
+            return;
+        }
 
-            document.items[index] = req.body.items;
-            document.markModified('items');
-            return document.save();
-        })
-        .then((document: IShoppingList) => {
-            res.status(200).json(document);
-        })
-        .catch((ex: Error) => {
-            res.status(400).json({ message: ex });
-            logging.error(workspace, 'Error updating item.', ex);
-        });
+        document.items[index] = req.body.items;
+        document.markModified('items');
+        document.save();
+        res.status(200).json(document);
+        logging.info(workspace, 'Item updated.');
+    } catch (error) {
+        logging.error(workspace, 'Error updating item.', error);
+    }
 };
 
 // put('/update/list/additem/:id')
@@ -152,10 +170,24 @@ const addItemsToList = async (req: Request, res: Response) => {
         document.items.push(...req.body.items);
         await document.save();
         res.status(200).json(document);
-    } catch (ex) {
-        logging.error(workspace, 'Could not add item to list', ex);
+    } catch (error) {
+        logging.error(workspace, 'Could not add item to list', error);
         return res.status(400).json({ message: 'Could not add item.' });
     }
 };
 
-export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList };
+// patch('/update/list/togglebought/:id')
+const toggleItemAsBought = async (req: Request, res: Response) => {
+    let errorMsg = '';
+    if (!req.params.id) errorMsg += 'No ID specified. ';
+    if (!req.body.index) errorMsg += 'No index in body. ';
+    if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
+
+    let index = req.body.index;
+    let document = await ShoppingList.findById({ _id: req.params.id });
+    document.items[index] != document.items[index];
+    await document.save();
+    res.status(200).json({ document });
+};
+
+export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList, toggleItemAsBought };
