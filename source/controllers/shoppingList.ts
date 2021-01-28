@@ -2,13 +2,16 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import logging from '../config/logging';
 import ShoppingList from '../models/shoppingList';
+import IShoppingList from '../interfaces/shoppingList';
 const workspace = 'ListController';
 
 /* Used to select just the relevant fields from the DB */
 const selection = '_id name createdAt items';
 
+//TODO: Add more proper error handling, return the results more consistently
+
 // post('/create/list')
-const createList = async (req: Request, res: Response) => {
+const createList = (req: Request, res: Response) => {
     /* Do some crude validation */
     let errorMsg = '';
     if (Object.keys(req.body).length > 2) errorMsg += 'Body has too many paramaters. ';
@@ -18,12 +21,12 @@ const createList = async (req: Request, res: Response) => {
     if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
 
     let { name, items } = req.body;
-
     const list = new ShoppingList({
         _id: new mongoose.Types.ObjectId(),
         name,
         items
     });
+
     return list
         .save()
         .then((result) => {
@@ -46,13 +49,13 @@ const deleteList = (req: Request, res: Response) => {
     ShoppingList.findByIdAndDelete({ _id: req.params.id })
         .then((res: any) => {
             logging.info(workspace, `Deleted list with ID ${req.params.id}`);
-            return res.status(200).json({message: "List deleted."})
+            return res.status(200).json({ message: 'List deleted.' });
         })
-        .catch((ex:any) => {
+        .catch((ex: any) => {
             logging.error(workspace, `Unable to delete list with ID ${req.params.id}`, ex);
             return res.status(500);
-        });  
-}
+        });
+};
 
 // get('/get/lists')
 const getAllLists = (req: Request, res: Response) => {
@@ -75,30 +78,30 @@ const getAllLists = (req: Request, res: Response) => {
 };
 
 // TODO: Support multiple indexes in one request
-// TODO: Use promises?
 // delete('/update/list/deleteitem/:id')
-const deleteItemFromList = async (req: Request, res: Response) => {
+const deleteItemFromList = (req: Request, res: Response) => {
     let errorMsg = '';
     if (!req.params.id) errorMsg += 'No ID specified. ';
-    if (req.body.index === undefined) errorMsg += 'No index specified. '
+    if (req.body.index === undefined) errorMsg += 'No index specified. ';
     else if (req.body.index < 0) errorMsg += 'Index must be >= 0. ';
     if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
 
-    try {
-        let document = await ShoppingList.findById({ _id: req.params.id });
-        let index = req.body.index;
-        if (index > document.items.length) {
-            return res.status(400).json({ message: 'Item not found.' });
-        }
+    ShoppingList.findById({ _id: req.params.id })
+        .then((document:IShoppingList) => {
+            let index = req.body.index;
+            if (!document.items || index > document.items.length) {
+                return res.status(400).json({ message: 'Item not found.' });
+            }
 
-        document.items.splice(index, 1);
-        document.markModified('items');
-        await document.save();
-        res.status(200).json(document);
-    } catch (ex) {
-        logging.error(workspace, 'Could not add item to list', ex);
-        return res.status(400).json({ message: 'Could not add item.' });
-    }
+            document.items.splice(index, 1);
+            document.markModified('items');
+            document.save();
+            res.status(200).json(document);
+        })
+        .catch((ex:any) => {
+            logging.error(workspace, 'Could not add item to list', ex);
+            return res.status(400).json({ message: 'Could not add item.' });
+        });
 };
 
 // TODO: support multiple items in one request
@@ -146,4 +149,4 @@ const addItemsToList = async (req: Request, res: Response) => {
     }
 };
 
-export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList};
+export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList };
