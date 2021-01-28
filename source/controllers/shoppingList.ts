@@ -45,16 +45,12 @@ const createList = (req: Request, res: Response) => {
 
 // TODO: hide list instead of delete?
 // delete('/delete/list:id')
-const deleteList = (req: Request, res: Response) => {
-    ShoppingList.findByIdAndDelete({ _id: req.params.id })
-        .then((res: any) => {
-            logging.info(workspace, `Deleted list with ID ${req.params.id}`);
-            return res.status(200).json({ message: 'List deleted.' });
-        })
-        .catch((ex: any) => {
-            logging.error(workspace, `Unable to delete list with ID ${req.params.id}`, ex);
-            return res.status(500);
-        });
+const deleteList = async (req: Request, res: Response) => {
+    let document = await ShoppingList.findByIdAndDelete({ _id: req.params.id });
+    if (document)
+        res.status(200).json({ message: 'List deleted.' });
+    else
+        res.status(400).json({ message: 'List not found.' });
 };
 
 // get('/get/lists')
