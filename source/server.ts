@@ -4,6 +4,7 @@ import logging from './config/logging';
 import config from './config/config';
 import listRoutes from './routes/shoppingLists';
 import mongoose from 'mongoose';
+import errorhandler from 'errorhandler';
 
 const NAMESPACE = 'Server';
 const router = express();
@@ -61,5 +62,4 @@ router.use((req, res, next) => {
 });
 
 const httpServer = http.createServer(router);
-
 httpServer.listen(config.server.port, () => logging.info(NAMESPACE, `Server is running http://${config.server.hostname}:${config.server.port}`));
