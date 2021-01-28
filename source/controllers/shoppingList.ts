@@ -119,7 +119,7 @@ const updateItem = (req: Request, res: Response) => {
     ShoppingList.findById({ _id: req.params.id }).then((document:IShoppingList) => {
         let index = Number.parseInt(req.body.index);
         if (!document.items || isNaN(req.body.index) || index > document.items.length) {
-            return res.status(400).json({ message: 'Item not found.' });
+            throw new Error("Item not found.");
         }
 
         document.items[index] = req.body.items;
@@ -128,6 +128,7 @@ const updateItem = (req: Request, res: Response) => {
     }).then((document: IShoppingList) => {
         res.status(200).json(document);
     }).catch((ex: any) => {
+        res.status(400).json({ message: ex });
         logging.error(workspace, 'Error updating item.', ex);
     });
 };
