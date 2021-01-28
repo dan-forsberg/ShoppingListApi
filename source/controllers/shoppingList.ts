@@ -40,6 +40,20 @@ const createList = async (req: Request, res: Response) => {
         });
 };
 
+// TODO: hide list instead of delete?
+// delete('/delete/list:id')
+const deleteList = (req: Request, res: Response) => {
+    ShoppingList.findByIdAndDelete({ _id: req.params.id })
+        .then((res: any) => {
+            logging.info(workspace, `Deleted list with ID ${req.params.id}`);
+            return res.status(200).json({message: "List deleted."})
+        })
+        .catch((ex:any) => {
+            logging.error(workspace, `Unable to delete list with ID ${req.params.id}`, ex);
+            return res.status(500);
+        });  
+}
+
 // get('/get/lists')
 const getAllLists = (req: Request, res: Response) => {
     ShoppingList.find()
@@ -60,19 +74,25 @@ const getAllLists = (req: Request, res: Response) => {
         });
 };
 
-// This need to be redone with indexes of the items array instead
+// TODO: Support multiple indexes in one request
+// TODO: Use promises?
 // delete('/update/list/deleteitem/:id')
 const deleteItemFromList = async (req: Request, res: Response) => {
     let errorMsg = '';
     if (!req.params.id) errorMsg += 'No ID specified. ';
-    if (!req.body.items) errorMsg += 'No items in body. ';
+    if (req.body.index === undefined) errorMsg += 'No index specified. '
+    else if (req.body.index < 0) errorMsg += 'Index must be >= 0. ';
     if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
 
     try {
         let document = await ShoppingList.findById({ _id: req.params.id });
-        let index = document.items.indexOf(req.body.items);
-        if (index == -1) return res.status(400).json({ message: 'Item not found.' });
+        let index = req.body.index;
+        if (index > document.items.length) {
+            return res.status(400).json({ message: 'Item not found.' });
+        }
+
         document.items.splice(index, 1);
+        document.markModified('items');
         await document.save();
         res.status(200).json(document);
     } catch (ex) {
@@ -81,6 +101,8 @@ const deleteItemFromList = async (req: Request, res: Response) => {
     }
 };
 
+// TODO: support multiple items in one request
+// TODO: Use promises?
 // patch('/update/list/updateitem/:id')
 const updateItem = async (req: Request, res: Response) => {
     console.info(workspace, req.body);
@@ -124,4 +146,4 @@ const addItemsToList = async (req: Request, res: Response) => {
     }
 };
 
-export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList };
+export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList};
