@@ -107,7 +107,7 @@ const deleteItemFromList = (req: Request, res: Response) => {
 // TODO: support multiple items in one request
 // TODO: Use promises?
 // patch('/update/list/updateitem/:id')
-const updateItem = async (req: Request, res: Response) => {
+const updateItem = (req: Request, res: Response) => {
     console.info(workspace, req.body);
     let errorMsg = '';
     if (req.params.id === undefined) errorMsg += 'No ID specified. ';
@@ -115,20 +115,21 @@ const updateItem = async (req: Request, res: Response) => {
     if (req.body.index === undefined) errorMsg += 'No item index specified ';
     if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
 
-    try {
-        let document = await ShoppingList.findById({ _id: req.params.id });
+
+    ShoppingList.findById({ _id: req.params.id }).then((document:IShoppingList) => {
         let index = Number.parseInt(req.body.index);
-        if (isNaN(req.body.index) || index > document.items.length) {
+        if (!document.items || isNaN(req.body.index) || index > document.items.length) {
             return res.status(400).json({ message: 'Item not found.' });
         }
 
         document.items[index] = req.body.items;
         document.markModified('items');
-        await document.save();
+        return document.save();
+    }).then((document: IShoppingList) => {
         res.status(200).json(document);
-    } catch (ex) {
+    }).catch((ex: any) => {
         logging.error(workspace, 'Error updating item.', ex);
-    }
+    });
 };
 
 // put('/update/list/additem/:id')
