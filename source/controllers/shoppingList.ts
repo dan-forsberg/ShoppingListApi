@@ -127,7 +127,7 @@ const updateItem = (req: Request, res: Response) => {
         return document.save();
     }).then((document: IShoppingList) => {
         res.status(200).json(document);
-    }).catch((ex: any) => {
+    }).catch((ex: Error) => {
         res.status(400).json({ message: ex });
         logging.error(workspace, 'Error updating item.', ex);
     });
