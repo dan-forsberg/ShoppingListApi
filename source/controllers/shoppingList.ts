@@ -97,8 +97,8 @@ const updateItem = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Item not found.' });
         }
 
-        /* NOT WORKING, doesn't actually save the new data although it seems like it */
         document.items[index] = req.body.items;
+        document.markModified('items');
         await document.save();
         res.status(200).json(document);
     } catch (ex) {
