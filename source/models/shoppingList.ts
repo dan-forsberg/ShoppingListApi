@@ -8,11 +8,10 @@ const ShoppingListItemSchema: Schema = new Schema({
     amount: { type: Number, required: false },
     price: { type: Number, required: false }
 });
-
 const ShoppingListSchema: Schema = new Schema(
     {
         name: { type: String, required: false, trim: true },
-        items: { type: [ShoppingListItemSchema], required: false },
+        items: { type: [ShoppingListItemSchema], required: true },
         hidden: { type: Boolean, required: true, default: false }
     },
     {
