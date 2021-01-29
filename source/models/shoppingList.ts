@@ -6,7 +6,8 @@ const ShoppingListItemSchema: Schema = new Schema({
     item: { type: String, required: true, trim: true },
     bought: { type: Boolean, required: true, default: false },
     amount: { type: Number, required: false },
-    price: { type: Number, required: false }
+    price: { type: Number, required: false },
+    hidden: { type: Boolean, required: true, default: false }
 });
 
 const ShoppingListSchema: Schema = new Schema(
