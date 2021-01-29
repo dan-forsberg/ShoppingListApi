@@ -10,49 +10,42 @@ const selection = '_id name createdAt items';
 
 //TODO: Add more proper error handling, return the results more consistently
 
-//TODO: fix this
 const makeStringToItem = (item: any) => {
-    if (typeof item === 'string') {
+    if (typeof item === 'string')
         return { item: item, bought: false };
-    } else if (!item.hasOwnProperty('bought')) {
+    else if (!item.hasOwnProperty('bought'))
         item.bought = false;
-    }
     return item;
 };
 
-const inputToItems = (items: Array<Object>) => {
-    for (let i = 0; items.length < 0; i++) {
-        items[i] = makeStringToItem(items[i]);
-    }
-    return items;
-};
-
 // post('/create/list')
-const createList = (req: Request, res: Response) => {
+const createList = async (req: Request, res: Response) => {
     /* Do some crude validation */
     let errorMsg = '';
-    if (Object.keys(req.body).length > 2) errorMsg += 'Body has too many paramaters. ';
-    if (!req.body.items) errorMsg += 'Items is not defined. ';
-    if (req.body.date) errorMsg += 'Date should not be set in the body. ';
-    if (req.body._id || req.body.id || req.params.id) errorMsg += '_id should not be set. ';
-    if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
+    if (Object.keys(req.body).length > 2)
+        errorMsg += 'Body has too many paramaters. ';
+    if (!req.body.items)
+        errorMsg += 'Items is not defined. ';
+    if (req.body.date)
+        errorMsg += 'Date should not be set in the body. ';
+    if (req.body._id || req.body.id || req.params.id)
+        errorMsg += '_id should not be set. ';
+    if (errorMsg !== '')
+        return res.status(400).json({ message: errorMsg });
 
     let { name, items } = req.body;
-    items = inputToItems(items);
-
-    console.log(items);
+    items = items.map(makeStringToItem);
 
     const list = new ShoppingList({
-        _id: new mongoose.Types.ObjectId(),
         name,
         items
     });
 
     try {
-        let result = list.save();
+        await list.save();
         logging.info(workspace, 'Created list.');
         res.status(201).json({
-            list: result /* should fix */
+            list: list /* should fix */
         });
     } catch (error) {
         res.status(500).json();
