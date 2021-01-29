@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
 import logging from '../config/logging';
 import IShoppingList from '../interfaces/shoppingList';
 import ShoppingList from '../models/shoppingList';
+
 const workspace = 'ListController';
 
 /* Used to select just the relevant fields from the DB */
@@ -43,7 +43,6 @@ const createList = async (req: Request, res: Response) => {
 
     try {
         await list.save();
-        logging.info(workspace, 'Created list.');
         res.status(201).json({
             list: list /* should fix */
         });
@@ -62,7 +61,6 @@ const deleteList = async (req: Request, res: Response) => {
         // or returns null if unsuccessfull
         let list = await ShoppingList.findByIdAndDelete({ _id: id });
         if (list) {
-            logging.info(workspace, `List with id ${id} deleted`);
             res.status(200).json({ message: 'List deleted.' });
         } else {
             logging.info(workspace, `List with id ${id} unsucessfully deleted.`, list);
@@ -79,11 +77,7 @@ const getAllLists = async (req: Request, res: Response) => {
     try {
         let lists = await ShoppingList.find().select(selection);
         if (lists) {
-            logging.info(workspace, 'Sent all lists.');
-            res.status(200).json({
-                lists: lists,
-                count: lists.length
-            });
+            res.status(200).json(lists);
         } else {
             logging.error(workspace, 'Could not get lists.');
             res.status(400);
@@ -97,41 +91,52 @@ const getAllLists = async (req: Request, res: Response) => {
 // delete('/update/list/deleteitem/:id')
 const deleteItemFromList = async (req: Request, res: Response) => {
     let errorMsg = '';
-    if (!req.params.id) errorMsg += 'No ID specified. ';
-    if (req.body.index === undefined) errorMsg += 'No index specified. ';
-    else if (req.body.index < 0) errorMsg += 'Index must be >= 0. ';
-    if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
+    if (!req.params.id)
+        errorMsg += 'No ID specified. ';
+    if (req.body.item === undefined)
+        errorMsg += 'No item _id specified. ';
+    if (errorMsg !== '')
+        return res.status(400).json({ message: errorMsg });
 
     try {
-        let document: IShoppingList | null = await ShoppingList.findById({ _id: req.params.id });
-        if (document !== null) {
-            let index = req.body.index;
-            if (!document.items || index > document.items.length) {
-                return res.status(400).json({ message: 'Item not found.' });
-            }
+        let document: IShoppingList | null =
+            await ShoppingList.findById(
+                { _id: req.params.id }
+            );
 
-            document.items.splice(index, 1);
-            document.markModified('items');
-            document.save();
-            res.status(200).json(document);
+        if (document !== null) {
+            //@ts-ignore -- I promise this is right, I've just not type:d thing right
+            let subDoc = document.items.id(req.body.item);
+            if (subDoc === null) {
+                res.status(400).json({ message: 'Item not found.' });
+            } else {
+                subDoc.remove();
+                await document.save();
+                res.status(200).json({ message: 'Item deleted.' });
+            }
         } else {
             res.status(400).json({ message: 'List not found.' });
         }
     } catch (error) {
-        logging.error(workspace, 'Could not add item to list', error);
-        return res.status(400).json({ message: 'Could not add item.' });
+        logging.error(workspace, 'Could not remove item to list', error);
+        res.status(500).json({ message: 'Could not remove item.' });
     }
 };
 
 // TODO: support multiple items in one request
+// TODO: use subdocument _id
 // patch('/update/list/updateitem/:id')
 const updateItem = async (req: Request, res: Response) => {
     console.info(workspace, req.body);
     let errorMsg = '';
-    if (req.params.id === undefined) errorMsg += 'No ID specified. ';
-    if (req.body.items === undefined || req.body.items.length < 1) errorMsg += 'No items in body. ';
-    if (req.body.index === undefined) errorMsg += 'No item index specified ';
-    if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
+    if (req.params.id === undefined)
+        errorMsg += 'No ID specified. ';
+    if (req.body.items === undefined || req.body.items.length < 1)
+        errorMsg += 'No items in body. ';
+    if (req.body.index === undefined)
+        errorMsg += 'No item index specified ';
+    if (errorMsg !== '')
+        return res.status(400).json({ message: errorMsg });
 
     try {
         let document: IShoppingList = await ShoppingList.findById({ _id: req.params.id });
