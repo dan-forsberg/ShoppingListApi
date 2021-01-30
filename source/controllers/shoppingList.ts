@@ -176,19 +176,18 @@ const toggleItemAsBought = async (req: Request, res: Response) => {
 
     if (document === null) {
         res.status(400).json({ message: 'List not found.' });
-        return;
-    }
-
-    let itemID = req.body.item;
-    //@ts-ignore - this is right, things are just not typed properly
-    let subDoc = document.items.id(itemID);
-    if (subDoc === null) {
-        res.status(400).json({ message: 'Item not found.' });
     } else {
-        subDoc.bought = !subDoc.bought;
-        document.markModified('items');
-        await document.save();
-        res.status(200).json({ document });
+        let itemID = req.body.item;
+        //@ts-ignore - this is right, things are just not typed properly
+        let subDoc = document.items.id(itemID);
+        if (subDoc === null) {
+            res.status(400).json({ message: 'Item not found.' });
+        } else {
+            subDoc.bought = !subDoc.bought;
+            document.markModified('items');
+            await document.save();
+            res.status(200).json({ document });
+        }
     }
 };
 
