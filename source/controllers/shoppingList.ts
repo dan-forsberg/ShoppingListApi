@@ -79,20 +79,16 @@ const hideList = async (req: Request, res: Response) => {
 
 // get('/get/lists')
 const getAllLists = async (req: Request, res: Response) => {
-    try {
-        let lists: Array<IShoppingList> = await ShoppingList
-            .where('hidden')
-            .equals(false)
-            .select(selection);
+    let lists: Array<IShoppingList> = await ShoppingList
+        .where('hidden')
+        .equals(false)
+        .select(selection);
 
-        if (lists) {
-            res.status(200).json(lists);
-        } else {
-            logging.error(workspace, 'Could not get lists.');
-            res.status(400);
-        }
-    } catch (error) {
-        res.status(500);
+    if (lists) {
+        res.status(200).json(lists);
+    } else {
+        logging.error(workspace, 'Could not get lists.');
+        res.status(400);
     }
 };
 
