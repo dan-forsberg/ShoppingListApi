@@ -11,7 +11,19 @@ const selection = '_id name createdAt items';
 //TODO: Only return params in selection is returned
 //TODO: Replace promises with async/await
 //TODO: Use errorhandler middleware
-//TODO: Better error checking, preferably in a function?
+
+const checkProperties = (req: Request, properties: String[]): String | null => {
+    let errorMsg = "Missing property/-ies: ";
+    let error = false;
+    properties.forEach(prop => {
+        if (!req.body.hasOwnProperty(prop)) {
+            errorMsg += `${prop} `;
+            error = true;
+        }
+    });
+
+    return (error ? errorMsg : null);
+};
 
 
 const makeStringToItem = (item: any): { item: string, bought: boolean; } => {
@@ -24,18 +36,11 @@ const makeStringToItem = (item: any): { item: string, bought: boolean; } => {
 
 // post('/create/list')
 const createList = async (req: Request, res: Response) => {
-    /* Do some crude validation */
-    let errorMsg = '';
-    if (Object.keys(req.body).length > 2)
-        errorMsg += 'Body has too many paramaters. ';
-    if (!req.body.items)
-        errorMsg += 'Items is not defined. ';
-    if (req.body.date)
-        errorMsg += 'Date should not be set in the body. ';
-    if (req.body._id || req.body.id || req.params.id)
-        errorMsg += '_id should not be set. ';
-    if (errorMsg !== '')
-        return res.status(400).json({ message: errorMsg });
+    let errorMsg = checkProperties(req, ["items"]);
+    if (errorMsg) {
+        res.status(401).json({ 'message': errorMsg });
+        return;
+    }
 
     let { name, items } = req.body;
     items = items.map(makeStringToItem);
@@ -51,8 +56,8 @@ const createList = async (req: Request, res: Response) => {
             list: list /* TODO: fix, return a proper list not just [] */
         });
     } catch (error) {
-        res.status(500).json();
-        logging.error(workspace, `Could not save list ${list}.`, error);
+        res.status(401).json({ message: error.message });
+        logging.error(workspace, `Could not save list ${list}.`);
     }
 };
 
