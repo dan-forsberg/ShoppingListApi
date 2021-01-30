@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import logging from '../config/logging';
 import IShoppingList from '../interfaces/shoppingList';
-import IShoppingListItem from '../interfaces/shoppingListItem';
 import ShoppingList from '../models/shoppingList';
 
 const workspace = 'ListController';
@@ -134,29 +133,25 @@ const deleteItemFromList = async (req: Request, res: Response) => {
 };
 
 // TODO: support multiple items in one request
-// TODO: use subdocument _id
 // patch('/update/list/updateitem/:id')
 const updateItem = async (req: Request, res: Response) => {
-    console.info(workspace, req.body);
     let errorMsg = '';
     if (req.params.id === undefined)
         errorMsg += 'No ID specified. ';
-    if (req.body.items === undefined || req.body.items.length < 1)
+    if (req.body.item === undefined || req.body.item.length < 1)
         errorMsg += 'No items in body. ';
-    if (req.body.index === undefined)
-        errorMsg += 'No item index specified ';
+    else if (req.body.item.id === undefined)
+        errorMsg += 'No item ID in body.';
     if (errorMsg !== '')
         return res.status(400).json({ message: errorMsg });
 
     try {
         let document: IShoppingList = await ShoppingList.findById({ _id: req.params.id });
-        let index = req.body.index;
-        if (!document.items || isNaN(index) || index > document.items.length) {
-            res.status(400).json({ message: 'Item not found.' });
-            return;
-        }
+        let item = makeStringToItem(req.body.item);
+        //@ts-ignore -- this is correct, things are not properly typed
+        let subDocument = document.items.id(item.id);
+        Object.assign(subDocument, item);
 
-        document.items[index] = req.body.items;
         document.markModified('items');
         document.save();
         res.status(200).json(document);
