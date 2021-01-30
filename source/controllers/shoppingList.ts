@@ -60,20 +60,14 @@ const createList = async (req: Request, res: Response) => {
 // delete('/delete/list:id')
 const hideList = async (req: Request, res: Response) => {
     let id = req.params.id;
-    try {
-        // findByIdAndDelete returns the list if successfull
-        // or returns null if unsuccessfull
-        let list: IShoppingList = await ShoppingList.findById({ _id: id });
-        if (list) {
-            list.hidden = true;
-            await list.save();
-            res.status(200).json({ message: 'List deleted.' });
-        } else {
-            res.status(400).json({ message: 'List not found.' });
-        }
-    } catch (error) {
-        res.status(500);
-        logging.error(workspace, 'Could not delete list.', error);
+    let list: IShoppingList = await ShoppingList.findById({ _id: id });
+
+    if (list !== null) {
+        list.hidden = true;
+        await list.save();
+        res.status(200).json({ message: 'List deleted.' });
+    } else {
+        res.status(400).json({ message: 'List not found.' });
     }
 };
 
