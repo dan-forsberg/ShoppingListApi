@@ -107,28 +107,24 @@ const deleteItemFromList = async (req: Request, res: Response) => {
     if (errorMsg !== '')
         return res.status(400).json({ message: errorMsg });
 
-    try {
-        let document: IShoppingList | null =
-            await ShoppingList.findById(
-                { _id: req.params.id }
-            );
+    let document: IShoppingList | null =
+        await ShoppingList.findById(
+            { _id: req.params.id }
+        );
 
-        if (document !== null) {
-            //@ts-ignore -- I promise this is right, I've just not type:d thing right
-            let subDoc = document.items.id(req.body.item);
-            if (subDoc === null) {
-                res.status(400).json({ message: 'Item not found.' });
-            } else {
-                subDoc.remove();
-                await document.save();
-                res.status(200).json({ message: 'Item deleted.' });
-            }
-        } else {
-            res.status(400).json({ message: 'List not found.' });
-        }
-    } catch (error) {
-        logging.error(workspace, 'Could not remove item to list', error);
-        res.status(500).json({ message: 'Could not remove item.' });
+    if (document === null) {
+        res.status(400).json({ message: 'List not found.' });
+        return;
+    }
+
+    //@ts-ignore -- I promise this is right, I've just not type:d thing right
+    let subDoc = document.items.id(req.body.item);
+    if (subDoc === null) {
+        res.status(400).json({ message: 'Item not found.' });
+    } else {
+        subDoc.remove();
+        await document.save();
+        res.status(200).json({ message: 'Item deleted.' });
     }
 };
 
