@@ -9,7 +9,6 @@ const workspace = 'ListController';
 const selection = '_id name createdAt items';
 //TODO: Add more proper error handling, return the results more consistently
 //TODO: Only return params in selection is returned
-//TODO: Replace promises with async/await
 //TODO: Use errorhandler middleware
 
 const checkProperties = (req: Request, properties: String[]): String | null => {
@@ -61,9 +60,14 @@ const createList = async (req: Request, res: Response) => {
     }
 };
 
-// TODO: hide list instead of delete?
 // delete('/delete/list:id')
 const hideList = async (req: Request, res: Response) => {
+    let errorMsg = checkProperties(req, ["id"]);
+    if (errorMsg) {
+        res.status(401).json({ 'message': errorMsg });
+        return;
+    }
+
     let id = req.params.id;
     let list: IShoppingList = await ShoppingList.findById({ _id: id });
 
@@ -94,14 +98,12 @@ const getAllLists = async (req: Request, res: Response) => {
 // TODO: Support multiple indexes in one request
 // delete('/update/list/deleteitem/:id')
 const deleteItemFromList = async (req: Request, res: Response) => {
-    let errorMsg = '';
-    if (!req.params.id)
-        errorMsg += 'No ID specified. ';
-    if (req.body.item === undefined)
-        errorMsg += 'No item _id specified. ';
-    if (errorMsg !== '')
-        return res.status(400).json({ message: errorMsg });
-
+    let errorMsg = checkProperties(req, ["item"]);
+    if (errorMsg) {
+        res.status(401).json({ 'message': errorMsg });
+        return;
+    }
+   
     let document: IShoppingList | null =
         await ShoppingList.findById(
             { _id: req.params.id }
@@ -125,16 +127,12 @@ const deleteItemFromList = async (req: Request, res: Response) => {
 
 // TODO: support multiple items in one request
 // patch('/update/list/updateitem/:id')
-const updateItem = async (req: Request, res: Response) => {
-    let errorMsg = '';
-    if (req.params.id === undefined)
-        errorMsg += 'No ID specified. ';
-    if (req.body.item === undefined || req.body.item.length < 1)
-        errorMsg += 'No items in body. ';
-    else if (req.body.item.id === undefined)
-        errorMsg += 'No item ID in body.';
-    if (errorMsg !== '')
-        return res.status(400).json({ message: errorMsg });
+const updateItem = async (req: Request, res: Response) => { 
+    let errorMsg = checkProperties(req, ["item", "item.id"]);
+    if (errorMsg) {
+        res.status(401).json({ 'message': errorMsg });
+        return;
+    }
 
     let document: IShoppingList = await ShoppingList.findById({ _id: req.params.id });
     let item = makeStringToItem(req.body.item);
@@ -149,13 +147,11 @@ const updateItem = async (req: Request, res: Response) => {
 
 // put('/update/list/additem/:id')
 const addItemsToList = async (req: Request, res: Response) => {
-    let errorMsg = '';
-    if (!req.params.id)
-        errorMsg += 'No ID specified. ';
-    if (!req.body.items)
-        errorMsg += 'No items in body. ';
-    if (errorMsg !== '')
-        return res.status(400).json({ message: errorMsg });
+    let errorMsg = checkProperties(req, ["items"]);
+    if (errorMsg) {
+        res.status(401).json({ 'message': errorMsg });
+        return;
+    }
 
     let document = await ShoppingList.findById({ _id: req.params.id });
     let newItems = req.body.items.map(makeStringToItem);
@@ -168,13 +164,11 @@ const addItemsToList = async (req: Request, res: Response) => {
 
 // patch('/update/list/togglebought/:id')
 const toggleItemAsBought = async (req: Request, res: Response) => {
-    let errorMsg = '';
-    if (!req.params.id)
-        errorMsg += 'No ID specified. ';
-    if (!req.body.item)
-        errorMsg += 'No item in body. ';
-    if (errorMsg !== '')
-        return res.status(400).json({ message: errorMsg });
+    let errorMsg = checkProperties(req, ["item"]);
+    if (errorMsg) {
+        res.status(401).json({ 'message': errorMsg });
+        return;
+    }
 
     let document: IShoppingList | null = await ShoppingList.findById(
         { _id: req.params.id }
@@ -190,12 +184,12 @@ const toggleItemAsBought = async (req: Request, res: Response) => {
     let subDoc = document.items.id(itemID);
     if (subDoc === null) {
         res.status(400).json({ message: 'Item not found.' });
-        return;
+    } else {
+        subDoc.bought = !subDoc.bought;
+        document.markModified('items');
+        await document.save();
+        res.status(200).json({ document });
     }
-    subDoc.bought = !subDoc.bought;
-    document.markModified('items');
-    await document.save();
-    res.status(200).json({ document });
 };
 
 export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList: hideList, toggleItemAsBought };
