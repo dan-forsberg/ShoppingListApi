@@ -1,16 +1,21 @@
 import { Request, Response } from 'express';
 import logging from '../config/logging';
 import IShoppingList from '../interfaces/shoppingList';
+import IShoppingListItem from '../interfaces/shoppingListItem';
 import ShoppingList from '../models/shoppingList';
 
 const workspace = 'ListController';
 
 /* Used to select just the relevant fields from the DB */
 const selection = '_id name createdAt items';
-
 //TODO: Add more proper error handling, return the results more consistently
+//TODO: Only return params in selection is returned
+//TODO: Replace promises with async/await
+//TODO: Use errorhandler middleware
+//TODO: Better error checking, preferably in a function?
 
-const makeStringToItem = (item: any) => {
+
+const makeStringToItem = (item: any): { item: string, bought: boolean; } => {
     if (typeof item === 'string')
         return { item: item, bought: false };
     else if (!item.hasOwnProperty('bought'))
@@ -44,7 +49,7 @@ const createList = async (req: Request, res: Response) => {
     try {
         await list.save();
         res.status(201).json({
-            list: list /* should fix */
+            list: list /* TODO: fix, return a proper list not just [] */
         });
     } catch (error) {
         res.status(500).json();
@@ -54,16 +59,17 @@ const createList = async (req: Request, res: Response) => {
 
 // TODO: hide list instead of delete?
 // delete('/delete/list:id')
-const deleteList = async (req: Request, res: Response) => {
+const hideList = async (req: Request, res: Response) => {
     let id = req.params.id;
     try {
         // findByIdAndDelete returns the list if successfull
         // or returns null if unsuccessfull
-        let list = await ShoppingList.findByIdAndDelete({ _id: id });
+        let list: IShoppingList = await ShoppingList.findById({ _id: id });
         if (list) {
+            list.hidden = true;
+            await list.save();
             res.status(200).json({ message: 'List deleted.' });
         } else {
-            logging.info(workspace, `List with id ${id} unsucessfully deleted.`, list);
             res.status(400).json({ message: 'List not found.' });
         }
     } catch (error) {
@@ -75,7 +81,11 @@ const deleteList = async (req: Request, res: Response) => {
 // get('/get/lists')
 const getAllLists = async (req: Request, res: Response) => {
     try {
-        let lists = await ShoppingList.find().select(selection);
+        let lists: Array<IShoppingList> = await ShoppingList
+            .where('hidden')
+            .equals(false)
+            .select(selection);
+
         if (lists) {
             res.status(200).json(lists);
         } else {
@@ -159,13 +169,17 @@ const updateItem = async (req: Request, res: Response) => {
 // put('/update/list/additem/:id')
 const addItemsToList = async (req: Request, res: Response) => {
     let errorMsg = '';
-    if (!req.params.id) errorMsg += 'No ID specified. ';
-    if (!req.body.items) errorMsg += 'No items in body. ';
-    if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
+    if (!req.params.id)
+        errorMsg += 'No ID specified. ';
+    if (!req.body.items)
+        errorMsg += 'No items in body. ';
+    if (errorMsg !== '')
+        return res.status(400).json({ message: errorMsg });
 
     try {
         let document = await ShoppingList.findById({ _id: req.params.id });
-        document.items.push(...req.body.items);
+        let newItems = req.body.items.map(makeStringToItem);
+        document.items.push(...newItems);
         await document.save();
         res.status(200).json(document);
     } catch (error) {
@@ -177,15 +191,33 @@ const addItemsToList = async (req: Request, res: Response) => {
 // patch('/update/list/togglebought/:id')
 const toggleItemAsBought = async (req: Request, res: Response) => {
     let errorMsg = '';
-    if (!req.params.id) errorMsg += 'No ID specified. ';
-    if (!req.body.index) errorMsg += 'No index in body. ';
-    if (errorMsg !== '') return res.status(400).json({ message: errorMsg });
+    if (!req.params.id)
+        errorMsg += 'No ID specified. ';
+    if (!req.body.item)
+        errorMsg += 'No item in body. ';
+    if (errorMsg !== '')
+        return res.status(400).json({ message: errorMsg });
 
-    let index = req.body.index;
-    let document = await ShoppingList.findById({ _id: req.params.id });
-    document.items[index] != document.items[index];
+    let document: IShoppingList | null = await ShoppingList.findById(
+        { _id: req.params.id }
+    );
+
+    if (document === null) {
+        res.status(400).json({ message: 'List not found.' });
+        return;
+    }
+
+    let itemID = req.body.item;
+    //@ts-ignore - this is right, things are just not typed properly
+    let subDoc = document.items.id(itemID);
+    if (subDoc === null) {
+        res.status(400).json({ message: 'Item not found.' });
+        return;
+    }
+    subDoc.bought = !subDoc.bought;
+    document.markModified('items');
     await document.save();
     res.status(200).json({ document });
 };
 
-export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList, toggleItemAsBought };
+export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList: hideList, toggleItemAsBought };
