@@ -111,17 +111,16 @@ const deleteItemFromList = async (req: Request, res: Response) => {
 
     if (document === null) {
         res.status(400).json({ message: 'List not found.' });
-        return;
-    }
-
-    //@ts-ignore -- I promise this is right, I've just not type:d thing right
-    let subDoc = document.items.id(req.body.item);
-    if (subDoc === null) {
-        res.status(400).json({ message: 'Item not found.' });
     } else {
-        subDoc.remove();
-        await document.save();
-        res.status(200).json({ message: 'Item deleted.' });
+        //@ts-ignore -- I promise this is right, I've just not type:d thing right
+        let subDoc = document.items.id(req.body.item);
+        if (subDoc === null) {
+            res.status(400).json({ message: 'Item not found.' });
+        } else {
+            subDoc.remove();
+            await document.save();
+            res.status(200).json({ message: 'Item deleted.' });
+        }
     }
 };
 
