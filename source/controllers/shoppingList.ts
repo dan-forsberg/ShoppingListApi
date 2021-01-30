@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import logging from '../config/logging';
 import IShoppingList from '../interfaces/shoppingList';
+import IShoppingListItem from '../interfaces/shoppingListItem';
 import ShoppingList from '../models/shoppingList';
 
 const workspace = 'ListController';
@@ -11,7 +12,7 @@ const selection = '_id name createdAt items';
 //TODO: Only return params in selection is returned
 //TODO: Use errorhandler middleware
 
-const checkProperties = (req: Request, properties: String[]): String | null => {
+function checkProperties (req: Request, properties: String[]): String | null {
     let errorMsg = "Missing property/-ies: ";
     let error = false;
     properties.forEach(prop => {
@@ -24,14 +25,37 @@ const checkProperties = (req: Request, properties: String[]): String | null => {
     return (error ? errorMsg : null);
 };
 
-
-const makeStringToItem = (item: any): { item: string, bought: boolean; } => {
+function makeStringToItem(item: any): { item: string, bought: boolean; } {
     if (typeof item === 'string')
         return { item: item, bought: false };
     else if (!item.hasOwnProperty('bought'))
         item.bought = false;
     return item;
 };
+
+type ListListItem = {
+    list: IShoppingList | null,
+    item: IShoppingListItem | null,
+};
+
+async function getListItem(listID: string, itemID: string): Promise<ListListItem> {
+    let result: ListListItem = { list: null, item: null };    
+    let shoppingList: IShoppingList | null =
+        await ShoppingList.findById(
+            { _id: listID }
+        );
+
+    if (shoppingList !== null) {
+        result.list = shoppingList;
+        //@ts-ignore -- I promise this is right, I've just not type:d thing right
+        let item = shoppingList.items.id(req.body.item);
+        if (item !== null) {
+            result.item = item;
+        }
+    }
+
+    return result;
+}
 
 // post('/create/list')
 const createList = async (req: Request, res: Response) => {
@@ -69,11 +93,11 @@ const hideList = async (req: Request, res: Response) => {
     }
 
     let id = req.params.id;
-    let list: IShoppingList = await ShoppingList.findById({ _id: id });
+    let shoppingList: IShoppingList = await ShoppingList.findById({ _id: id });
 
-    if (list !== null) {
-        list.hidden = true;
-        await list.save();
+    if (shoppingList !== null) {
+        shoppingList.hidden = true;
+        await shoppingList.save();
         res.status(200).json({ message: 'List deleted.' });
     } else {
         res.status(400).json({ message: 'List not found.' });
@@ -82,13 +106,13 @@ const hideList = async (req: Request, res: Response) => {
 
 // get('/get/lists')
 const getAllLists = async (req: Request, res: Response) => {
-    let lists: Array<IShoppingList> = await ShoppingList
+    let shoppingLists: Array<IShoppingList> = await ShoppingList
         .where('hidden')
         .equals(false)
         .select(selection);
 
-    if (lists) {
-        res.status(200).json(lists);
+    if (shoppingLists) {
+        res.status(200).json(shoppingLists);
     } else {
         logging.error(workspace, 'Could not get lists.');
         res.status(400);
@@ -103,24 +127,18 @@ const deleteItemFromList = async (req: Request, res: Response) => {
         res.status(401).json({ 'message': errorMsg });
         return;
     }
-   
-    let document: IShoppingList | null =
-        await ShoppingList.findById(
-            { _id: req.params.id }
-        );
 
-    if (document === null) {
+    let list = await getListItem(req.params.id, req.body.item);
+    if (!list.list) {
         res.status(400).json({ message: 'List not found.' });
+    } else if (!list.item) {
+        res.status(400).json({ message: 'Item not found'});
     } else {
-        //@ts-ignore -- I promise this is right, I've just not type:d thing right
-        let subDoc = document.items.id(req.body.item);
-        if (subDoc === null) {
-            res.status(400).json({ message: 'Item not found.' });
-        } else {
-            subDoc.remove();
-            await document.save();
-            res.status(200).json({ message: 'Item deleted.' });
-        }
+        //@ts-ignore
+        list.item.remove();
+        //@ts-ignore
+        await list.save();
+        res.status(200).json({ message: 'Item deleted.' });
     }
 };
 
@@ -133,15 +151,15 @@ const updateItem = async (req: Request, res: Response) => {
         return;
     }
 
-    let document: IShoppingList = await ShoppingList.findById({ _id: req.params.id });
+    let shoppingList: IShoppingList = await ShoppingList.findById({ _id: req.params.id });
     let item = makeStringToItem(req.body.item);
 
     //@ts-ignore -- this is correct, things are not properly typed
-    let subDocument = document.items.id(item.id);
-    Object.assign(subDocument, item);
+    let listItemument = shoppingList.items.id(item.id);
+    Object.assign(listItemument, item);
 
-    document.save();
-    res.status(200).json(document);
+    shoppingList.save();
+    res.status(200).json(shoppingList);
 };
 
 // put('/update/list/additem/:id')
@@ -152,13 +170,13 @@ const addItemsToList = async (req: Request, res: Response) => {
         return;
     }
 
-    let document = await ShoppingList.findById({ _id: req.params.id });
+    let shoppingList = await ShoppingList.findById({ _id: req.params.id });
     let newItems = req.body.items.map(makeStringToItem);
 
-    document.items.push(...newItems);
-    await document.save();
+    shoppingList.items.push(...newItems);
+    await shoppingList.save();
 
-    res.status(200).json(document);
+    res.status(200).json(shoppingList);
 };
 
 // patch('/update/list/togglebought/:id')
@@ -169,25 +187,27 @@ const toggleItemAsBought = async (req: Request, res: Response) => {
         return;
     }
 
-    let document: IShoppingList | null = await ShoppingList.findById(
+    let shoppingList: IShoppingList | null = await ShoppingList.findById(
         { _id: req.params.id }
     );
 
-    if (document === null) {
+    if (shoppingList === null) {
         res.status(400).json({ message: 'List not found.' });
     } else {
         let itemID = req.body.item;
         //@ts-ignore - this is right, things are just not typed properly
-        let subDoc = document.items.id(itemID);
-        if (subDoc === null) {
+        let listItem = shoppingList.items.id(itemID);
+        if (listItem === null) {
             res.status(400).json({ message: 'Item not found.' });
         } else {
-            subDoc.bought = !subDoc.bought;
-            document.markModified('items');
-            await document.save();
-            res.status(200).json({ document });
+            listItem.bought = !listItem.bought;
+            shoppingList.markModified('items');
+            await shoppingList.save();
+            res.status(200).json({ shoppingList });
         }
     }
 };
+
+
 
 export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList: hideList, toggleItemAsBought };
