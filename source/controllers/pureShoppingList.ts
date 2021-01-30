@@ -3,6 +3,8 @@ import logging from "../config/logging";
 import ShoppingList from "../models/shoppingList";
 import { ListNotFoundError, ListItemNotFoundError } from "../interfaces/errors";
 import IShoppingListItem from "../interfaces/shoppingListItem";
+import { Request, Response } from "express";
+import mongoose from "mongoose";
 const workspace = "ListController";
 const selection = "_id name createdAt items";
 
@@ -27,24 +29,26 @@ async function getListItem(listID: any, itemID: any): Promise<ListListItem> {
     return result;
 }
 
-const getAllLists = async (): Promise<Array<IShoppingList>> => {
-    return ShoppingList.find().where('hidden').equals(false).select(selection);
+function makeStringToItem(item: any): { item: string, bought: boolean; } {
+    if (typeof item === 'string')
+        return { item: item, bought: false };
+    else if (!item.hasOwnProperty('bought'))
+        item.bought = false;
+    return item;
 };
 
-const createList = async (
-    shoppingList: IShoppingList
-): Promise<IShoppingList> => {
+const getAllLists = async (req: Request, res: Response) => {
     try {
-        const newList = new ShoppingList(shoppingList);
-        await newList.save();
-        return shoppingList;
+        const lists = ShoppingList.find().where('hidden').equals(false).select(selection);
+        res.send(200).json({lists: lists, count: lists.count});
     } catch (ex) {
-        logging.error(workspace, "Could not create or save list.", ex);
-        throw ex;
+        logging.error(workspace, "Could not get lists.", ex);
+        res.send(500);
     }
 };
 
-const hideList = async (listID: number): Promise<IShoppingList> => {
+const hideList = async (req: Request, res: Response) => {
+    const listID = req.body.id;
     try {
         const shoppingList = await ShoppingList.findById({ _id: listID });
         if (!shoppingList) {
@@ -52,37 +56,46 @@ const hideList = async (listID: number): Promise<IShoppingList> => {
         } else {
             shoppingList.hidden = true;
             await shoppingList.save();
-            return shoppingList;
+            res.status(200).json({ list: shoppingList });
         }
     } catch (ex) {
-        if (ex instanceof ListNotFoundError)
-            logging.error(workspace, `List not found, ID: ${listID}`);
-        else logging.error(workspace, `Could not hide list with ID: ${listID}`, ex);
-        throw ex;
+        if (ex instanceof ListNotFoundError) {
+            res.status(400).json({ message: `List not found, ID: ${listID}` });
+        } else {
+            logging.error(workspace, "Could not hide list.", ex.message);
+            res.status(500).json({ message: `Could not hide list with ID: ${listID}` });
+        }
     }
 };
 
-const deleteItemFromList = async (
-    listID: any,
-    itemID: any
-): Promise<IShoppingList> => {
-    let { shoppingList, listItem } = await getListItem(listID, itemID);
-    if (!shoppingList) {
-        throw new ListNotFoundError(`List not found, ID: ${listID}`);
-    } else if (!listItem) {
-        throw new ListItemNotFoundError(`List item not found, ID: ${itemID}`);
-    } else {
-        listItem.remove();
-        await shoppingList.save();
-        return shoppingList;
+const deleteItemFromList = async (req: Request, res: Response) => {
+    const { listID, itemID } = req.params;
+    const { shoppingList, listItem } = await getListItem(listID, itemID);
+    try {
+        if (!shoppingList) {
+            throw new ListNotFoundError(`List not found, ID: ${listID}`);
+        } else if (!listItem) {
+            throw new ListItemNotFoundError(`List item not found, ID: ${itemID}`);
+        } else {
+            listItem.remove();
+            await shoppingList.save();
+            res.status(200).json({list: shoppingList});
+        }
+    } catch (ex) {
+        if (ex instanceof ListNotFoundError) {
+            res.send(400).json({ message: 'List not found.'});
+        } else if (ex instanceof ListItemNotFoundError) {
+            res.send(400).json({ message: 'List item not found.'});
+        } else {
+            logging.error(workspace, "Could not delete item from list.", ex.message);
+            res.send(500);
+        }
     }
 };
 
-const updateItem = async (
-    listID: any,
-    newItem: IShoppingListItem
-): Promise<IShoppingList> => {
-    let { shoppingList, listItem } = await getListItem(listID, newItem._id);
+const updateItem = async (req: Request, res: Response) => {
+    //TODO this...
+    const { shoppingList, listItem } = await getListItem(listID, newItem._id);
     if (!shoppingList) {
         throw new ListNotFoundError(`List not found, ID: ${listID}`);
     } else if (!listItem) {
@@ -115,5 +128,21 @@ const toggleItemAsBought = async (listID: any, itemID: any): Promise<IShoppingLi
         return shoppingList;
     }
 };
+
+const createList = async (req: Request, res: Response) => {
+    const shoppingList: IShoppingList = { ...req.body };
+    try {
+        const newList = new ShoppingList(shoppingList);
+        await newList.save();
+        let createdList = await createList(shoppingList);
+        res.status(201).json({ 'list': createdList });
+    } catch (ex) {
+        if (ex instanceof mongoose.Error.ValidationError) {
+            res.status(400).json({ message: 'Malformed request.' });
+        } else {
+            res.status(500);
+        }
+    }
+}
 
 export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, hideList, toggleItemAsBought };
