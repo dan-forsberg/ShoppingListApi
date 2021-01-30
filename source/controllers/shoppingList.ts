@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import logging from '../config/logging';
 import IShoppingList from '../interfaces/shoppingList';
-import IShoppingListItem from '../interfaces/shoppingListItem';
 import ShoppingList from '../models/shoppingList';
 
 const workspace = 'ListController';
@@ -34,26 +33,24 @@ function makeStringToItem(item: any): { item: string, bought: boolean; } {
 };
 
 type ListListItem = {
-    list: IShoppingList | null,
-    item: IShoppingListItem | null,
+    /* any because @types/mongoose isn't properly typed */
+    shoppingList: any | null,
+    listItem: any | null,
 };
 
 async function getListItem(listID: string, itemID: string): Promise<ListListItem> {
-    let result: ListListItem = { list: null, item: null };    
+    let result: ListListItem = { shoppingList: null, listItem: null };
     let shoppingList: IShoppingList | null =
         await ShoppingList.findById(
             { _id: listID }
         );
 
     if (shoppingList !== null) {
-        result.list = shoppingList;
-        //@ts-ignore -- I promise this is right, I've just not type:d thing right
-        let item = shoppingList.items.id(req.body.item);
-        if (item !== null) {
-            result.item = item;
-        }
+        result.shoppingList = shoppingList;
+        //@ts-ignore -- I promise this is right, I(?) have just not type:d thing right
+        result.listItem = shoppingList.items.id(req.body.item);
     }
-
+    
     return result;
 }
 
@@ -94,7 +91,6 @@ const hideList = async (req: Request, res: Response) => {
 
     let id = req.params.id;
     let shoppingList: IShoppingList = await ShoppingList.findById({ _id: id });
-
     if (shoppingList !== null) {
         shoppingList.hidden = true;
         await shoppingList.save();
@@ -128,16 +124,14 @@ const deleteItemFromList = async (req: Request, res: Response) => {
         return;
     }
 
-    let list = await getListItem(req.params.id, req.body.item);
-    if (!list.list) {
+    let {shoppingList, listItem} = await getListItem(req.params.id, req.body.item);
+    if (!shoppingList) {
         res.status(400).json({ message: 'List not found.' });
-    } else if (!list.item) {
+    } else if (!listItem) {
         res.status(400).json({ message: 'Item not found'});
     } else {
-        //@ts-ignore
-        list.item.remove();
-        //@ts-ignore
-        await list.save();
+        listItem.remove();
+        await shoppingList.save();
         res.status(200).json({ message: 'Item deleted.' });
     }
 };
@@ -151,15 +145,17 @@ const updateItem = async (req: Request, res: Response) => {
         return;
     }
 
-    let shoppingList: IShoppingList = await ShoppingList.findById({ _id: req.params.id });
-    let item = makeStringToItem(req.body.item);
-
-    //@ts-ignore -- this is correct, things are not properly typed
-    let listItemument = shoppingList.items.id(item.id);
-    Object.assign(listItemument, item);
-
-    shoppingList.save();
-    res.status(200).json(shoppingList);
+    let {shoppingList, listItem} = await getListItem(req.params.id, req.body.item);
+    if (!shoppingList) {
+        res.status(400).json({ message: 'List not found.' });
+    } else if (!listItem) {
+        res.status(400).json({ message: 'Item not found'});
+    } else {
+        let item = makeStringToItem(req.body.item);
+        Object.assign(listItem, item);
+        await shoppingList.save();
+        res.status(200).json(shoppingList);
+    }
 };
 
 // put('/update/list/additem/:id')
@@ -186,28 +182,17 @@ const toggleItemAsBought = async (req: Request, res: Response) => {
         res.status(401).json({ 'message': errorMsg });
         return;
     }
-
-    let shoppingList: IShoppingList | null = await ShoppingList.findById(
-        { _id: req.params.id }
-    );
-
-    if (shoppingList === null) {
+    let {shoppingList, listItem} = await getListItem(req.params.id, req.body.item);
+    if (!shoppingList) {
         res.status(400).json({ message: 'List not found.' });
+    } else if (!listItem) {
+        res.status(400).json({ message: 'Item not found.' });
     } else {
-        let itemID = req.body.item;
-        //@ts-ignore - this is right, things are just not typed properly
-        let listItem = shoppingList.items.id(itemID);
-        if (listItem === null) {
-            res.status(400).json({ message: 'Item not found.' });
-        } else {
-            listItem.bought = !listItem.bought;
-            shoppingList.markModified('items');
-            await shoppingList.save();
-            res.status(200).json({ shoppingList });
-        }
+        listItem.bought = !listItem.bought;
+        shoppingList.markModified('items');
+        await shoppingList.save();
+        res.status(200).json({ shoppingList });
     }
 };
-
-
 
 export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList: hideList, toggleItemAsBought };
