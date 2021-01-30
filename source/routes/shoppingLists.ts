@@ -13,5 +13,5 @@ router.patch('/update/list/updateItem/:id', controller.updateItem);
 router.patch('/update/list/toggleBought/:id', controller.toggleItemAsBought);
 
 router.delete('/update/list/deleteItem/:id', controller.deleteItemFromList);
-router.delete('/delete/list/:id', controller.deleteList);
+router.delete('/delete/list/:id', controller.hideList);
 export = router;

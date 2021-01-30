@@ -11,7 +11,7 @@ const selection = '_id name createdAt items';
 //TODO: Only return params in selection is returned
 //TODO: Use errorhandler middleware
 
-function checkProperties (req: Request, properties: String[]): String | null {
+function checkProperties(req: Request, properties: String[]): String | null {
     let errorMsg = "Missing property/-ies: ";
     let error = false;
     properties.forEach(prop => {
@@ -50,7 +50,7 @@ async function getListItem(listID: string, itemID: string): Promise<ListListItem
         //@ts-ignore -- I promise this is right, I(?) have just not type:d thing right
         result.listItem = shoppingList.items.id(req.body.item);
     }
-    
+
     return result;
 }
 
@@ -124,11 +124,11 @@ const deleteItemFromList = async (req: Request, res: Response) => {
         return;
     }
 
-    let {shoppingList, listItem} = await getListItem(req.params.id, req.body.item);
+    let { shoppingList, listItem } = await getListItem(req.params.id, req.body.item);
     if (!shoppingList) {
         res.status(400).json({ message: 'List not found.' });
     } else if (!listItem) {
-        res.status(400).json({ message: 'Item not found'});
+        res.status(400).json({ message: 'Item not found' });
     } else {
         listItem.remove();
         await shoppingList.save();
@@ -138,18 +138,18 @@ const deleteItemFromList = async (req: Request, res: Response) => {
 
 // TODO: support multiple items in one request
 // patch('/update/list/updateitem/:id')
-const updateItem = async (req: Request, res: Response) => { 
+const updateItem = async (req: Request, res: Response) => {
     let errorMsg = checkProperties(req, ["item", "item.id"]);
     if (errorMsg) {
         res.status(401).json({ 'message': errorMsg });
         return;
     }
 
-    let {shoppingList, listItem} = await getListItem(req.params.id, req.body.item);
+    let { shoppingList, listItem } = await getListItem(req.params.id, req.body.item);
     if (!shoppingList) {
         res.status(400).json({ message: 'List not found.' });
     } else if (!listItem) {
-        res.status(400).json({ message: 'Item not found'});
+        res.status(400).json({ message: 'Item not found' });
     } else {
         let item = makeStringToItem(req.body.item);
         Object.assign(listItem, item);
@@ -182,7 +182,7 @@ const toggleItemAsBought = async (req: Request, res: Response) => {
         res.status(401).json({ 'message': errorMsg });
         return;
     }
-    let {shoppingList, listItem} = await getListItem(req.params.id, req.body.item);
+    let { shoppingList, listItem } = await getListItem(req.params.id, req.body.item);
     if (!shoppingList) {
         res.status(400).json({ message: 'List not found.' });
     } else if (!listItem) {
@@ -195,4 +195,4 @@ const toggleItemAsBought = async (req: Request, res: Response) => {
     }
 };
 
-export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, deleteList: hideList, toggleItemAsBought };
+export default { createList, getAllLists, addItemsToList, updateItem, deleteItemFromList, hideList, toggleItemAsBought };
