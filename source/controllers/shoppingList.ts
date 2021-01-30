@@ -145,20 +145,15 @@ const updateItem = async (req: Request, res: Response) => {
     if (errorMsg !== '')
         return res.status(400).json({ message: errorMsg });
 
-    try {
-        let document: IShoppingList = await ShoppingList.findById({ _id: req.params.id });
-        let item = makeStringToItem(req.body.item);
-        //@ts-ignore -- this is correct, things are not properly typed
-        let subDocument = document.items.id(item.id);
-        Object.assign(subDocument, item);
+    let document: IShoppingList = await ShoppingList.findById({ _id: req.params.id });
+    let item = makeStringToItem(req.body.item);
 
-        document.markModified('items');
-        document.save();
-        res.status(200).json(document);
-        logging.info(workspace, 'Item updated.');
-    } catch (error) {
-        logging.error(workspace, 'Error updating item.', error);
-    }
+    //@ts-ignore -- this is correct, things are not properly typed
+    let subDocument = document.items.id(item.id);
+    Object.assign(subDocument, item);
+
+    document.save();
+    res.status(200).json(document);
 };
 
 // put('/update/list/additem/:id')
