@@ -171,16 +171,13 @@ const addItemsToList = async (req: Request, res: Response) => {
     if (errorMsg !== '')
         return res.status(400).json({ message: errorMsg });
 
-    try {
-        let document = await ShoppingList.findById({ _id: req.params.id });
-        let newItems = req.body.items.map(makeStringToItem);
-        document.items.push(...newItems);
-        await document.save();
-        res.status(200).json(document);
-    } catch (error) {
-        logging.error(workspace, 'Could not add item to list', error);
-        return res.status(400).json({ message: 'Could not add item.' });
-    }
+    let document = await ShoppingList.findById({ _id: req.params.id });
+    let newItems = req.body.items.map(makeStringToItem);
+
+    document.items.push(...newItems);
+    await document.save();
+
+    res.status(200).json(document);
 };
 
 // patch('/update/list/togglebought/:id')
