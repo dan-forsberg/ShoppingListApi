@@ -1,5 +1,4 @@
-import Document from 'mongoose';
-export default interface IShoppingListItem extends Document {
+export default interface IShoppingListItem {
     item: String;
     bought: Boolean;
     cost?: Number;

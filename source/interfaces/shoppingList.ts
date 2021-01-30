@@ -1,9 +1,8 @@
-import { Document } from 'mongoose';
-import IShoppingListItemSchema from '../models/shoppingList';
+import IShoppingListItem from './shoppingListItem';
 
-export default interface IShoppingList extends Document {
+export default interface IShoppingList {
     name?: String;
-    items: Array<typeof IShoppingListItemSchema>;
+    items: Array<IShoppingListItem>;
     _id: Number;
     hidden: Boolean;
 }
