@@ -4,7 +4,6 @@ import logging from './config/logging';
 import config from './config/config';
 import listRoutes from './routes/shoppingLists';
 import mongoose from 'mongoose';
-import errorhandler from 'errorhandler';
 
 const NAMESPACE = 'Server';
 const router = express();
