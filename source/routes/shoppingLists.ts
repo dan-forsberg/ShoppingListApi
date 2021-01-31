@@ -7,11 +7,11 @@ router.post('/create/list', controller.createList);
 
 router.get('/get/lists', controller.getAllLists);
 
-router.put('/update/list/addItem/:id', controller.addItemsToList);
+router.put('/update/list/:listID/addItem/', controller.addItemsToList);
 
-router.patch('/update/list/updateItem/:id', controller.updateItem);
-router.patch('/update/list/toggleBought/:id', controller.toggleItemAsBought);
+router.patch('/update/list/:listID/updateItem/:itemID', controller.updateItem);
+router.patch('/update/list/:listID/toggleBought/:itemID', controller.toggleItemAsBought);
 
-router.delete('/update/list/deleteItem/:id', controller.deleteItemFromList);
-router.delete('/delete/list/:id', controller.hideList);
+router.delete('/update/list/:listID/deleteItem/:itemID', controller.deleteItemFromList);
+router.delete('/delete/list/:listID', controller.hideList);
 export = router;
