@@ -21,8 +21,4 @@ const ShoppingListSchema: Schema = new Schema(
     }
 );
 
-ShoppingListSchema.post<IShoppingList>('save', function () {
-    logging.info('Mongo', 'ShoppingList saved: ', this);
-});
-
 export default mongoose.model<Document<IShoppingList>>('ShoppingList', ShoppingListSchema);
