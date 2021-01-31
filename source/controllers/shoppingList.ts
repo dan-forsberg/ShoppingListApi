@@ -18,7 +18,7 @@ async function getListItem(listID: any, itemID: any): Promise<ListListItem> {
     /* any because @types/mongoose isn't typed properly
        or because I can't figure out how to type things properly to get
        TS to be happy. This is actually a IShoppingList (which contains IShoppingListItem) */
-    let shoppingList: any = await ShoppingList.findById({ _id: listID });
+    let shoppingList: any = await ShoppingList.findById({ _id: listID }).select(selection);
 
     if (shoppingList !== null) {
         result.shoppingList = shoppingList;
@@ -53,13 +53,13 @@ const hideList = async (req: Request, res: Response) => {
             throw new ListNotFoundError("List not found.");
         }
 
-        const shoppingList = await ShoppingList.findById({ _id: listID });
+        const shoppingList = await ShoppingList.findById({ _id: listID }).select(selection);
         if (!shoppingList) {
             throw new ListNotFoundError("List not found.");
         } else {
             shoppingList.hidden = true;
             await shoppingList.save();
-            res.status(200).json({ list: shoppingList });
+            res.status(200).json({ message: "List deleted." });
         }
     } catch (ex) {
         if (ex instanceof ListNotFoundError) {
@@ -130,7 +130,7 @@ const updateItem = async (req: Request, res: Response) => {
 const addItemsToList = async (req: Request, res: Response) => {
     const listID = req.params.listID;
     const newItems = req.body.items.map(makeStringToItem);
-    const shoppingList = await ShoppingList.findById({ _id: listID });
+    const shoppingList = await ShoppingList.findById({ _id: listID }).select(selection);
 
     try {
         if (!shoppingList) {
