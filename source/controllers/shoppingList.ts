@@ -106,7 +106,11 @@ const updateItem = async (req: Request, res: Response) => {
         } else if (!listItem) {
             throw new ListItemNotFoundError(`List item not found, ID: ${itemID}`);
         } else {
+            /* to not overwrite bought status */
+            const bought = listItem.bought;
             Object.assign(listItem, newItem);
+            listItem.bought = bought;
+
             shoppingList.markModified('items');
             await shoppingList.save();
             res.status(202).json({ list: shoppingList });
