@@ -4,6 +4,7 @@ import logging from './config/logging';
 import config from './config/config';
 import listRoutes from './routes/shoppingLists';
 import mongoose from 'mongoose';
+import cors from 'cors';
 
 const NAMESPACE = 'Server';
 const router = express();
@@ -30,6 +31,9 @@ router.use((req, res, next) => {
 
     next();
 });
+
+router.use(cors());
+
 
 /** Parse the body of the request */
 router.use(express.urlencoded({ extended: true }));
