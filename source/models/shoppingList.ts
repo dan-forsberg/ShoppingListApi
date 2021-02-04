@@ -1,5 +1,4 @@
 import mongoose, { Schema } from 'mongoose';
-import logging from '../config/logging';
 import { Document } from 'mongoose';
 import IShoppingList from '../interfaces/shoppingList';
 
