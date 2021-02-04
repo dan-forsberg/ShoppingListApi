@@ -1,7 +1,7 @@
 export default interface IShoppingListItem {
     item: String;
     bought: Boolean;
-    cost?: Number;
+    price?: Number;
     amount?: Number;
     _id: Number;
 }
